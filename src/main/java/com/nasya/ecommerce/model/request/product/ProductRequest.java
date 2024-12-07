@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -26,4 +27,9 @@ public class ProductRequest {
     @NotNull(message = "Deskripsi produk tidak boleh null")
     @Size(max = 100, message = "Deskripsi produk tidak boleh lebih dari 100 karakter")
     private String description;
+
+    private Integer stockQuantity;
+    private BigDecimal weight;
+
+    private List<Long> categoryIds;
 }
