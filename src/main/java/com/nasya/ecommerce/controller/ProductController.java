@@ -1,6 +1,7 @@
 package com.nasya.ecommerce.controller;
 
 import com.nasya.ecommerce.model.request.product.ProductRequest;
+import com.nasya.ecommerce.model.response.product.PaginatedProductResponse;
 import com.nasya.ecommerce.model.response.product.ProductResponse;
 import com.nasya.ecommerce.service.ProductService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -33,10 +34,11 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductResponse>> getAllProducts(
+    public ResponseEntity<PaginatedProductResponse> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "product_id,asc") String[] sort
+            @RequestParam(defaultValue = "product_id,asc") String[] sort,
+            @RequestParam(required = false) String name
     ){
         // implement multi sort
         // ex: sort asc by product name, desc by price product
@@ -50,8 +52,14 @@ public class ProductController {
             orders.add(new Sort.Order(getSortDirection(sort[1]),sort[0]));
         }
         Pageable pageable = PageRequest.of(page, size, Sort.by(orders));
-        Page<ProductResponse> response = productService.findByPage(pageable);
-        return ResponseEntity.ok(response);
+        Page<ProductResponse> response;
+
+        if(name != null && !name.isEmpty()){
+            response = productService.findByNameAndPageable(name, pageable);
+        }else {
+            response = productService.findByPage(pageable);
+        }
+        return ResponseEntity.ok(productService.convertProductPage(response));
     }
 
     @PostMapping

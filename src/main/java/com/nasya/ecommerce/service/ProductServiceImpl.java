@@ -7,6 +7,7 @@ import com.nasya.ecommerce.entity.ProductCategory;
 import com.nasya.ecommerce.entity.ProductCategory.ProductCategoryId;
 import com.nasya.ecommerce.model.request.product.ProductRequest;
 import com.nasya.ecommerce.model.response.category.CategoryResponse;
+import com.nasya.ecommerce.model.response.product.PaginatedProductResponse;
 import com.nasya.ecommerce.model.response.product.ProductResponse;
 import com.nasya.ecommerce.repository.CategoryRepository;
 import com.nasya.ecommerce.repository.ProductCategoryRepository;
@@ -45,6 +46,15 @@ public class ProductServiceImpl implements ProductService{
             return ProductResponse.fromProductAndCategories(product, categoryResponses);
         });
 
+    }
+
+    @Override
+    public Page<ProductResponse> findByNameAndPageable(String name, Pageable pageable) {
+        name = "%" + name.toLowerCase() + "%";
+        return productRepository.findByNamePageable(name, pageable).map(product ->{
+            List<CategoryResponse> categoryResponses = getProductCategoires(product.getProductId());
+            return ProductResponse.fromProductAndCategories(product, categoryResponses);
+        });
     }
 
     @Override
@@ -148,6 +158,18 @@ public class ProductServiceImpl implements ProductService{
 
         productCategoryRepository.deleteAll(productCategories);
         productRepository.delete(existingProduct);
+    }
+
+    @Override
+    public PaginatedProductResponse convertProductPage(Page<ProductResponse> response) {
+        return PaginatedProductResponse.builder()
+                .data(response.getContent())
+                .pageNo(response.getNumber())
+                .pageSize(response.getSize())
+                .totalElements(response.getNumberOfElements())
+                .totalPages(response.getTotalPages())
+                .last(response.isLast())
+                .build();
     }
 
     /***
