@@ -12,6 +12,8 @@ import com.nasya.ecommerce.repository.CategoryRepository;
 import com.nasya.ecommerce.repository.ProductCategoryRepository;
 import com.nasya.ecommerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,15 @@ public class ProductServiceImpl implements ProductService{
                     return ProductResponse.fromProductAndCategories(product, categoryResponses);
                 })
                 .toList();
+    }
+
+    @Override
+    public Page<ProductResponse> findByPage(Pageable pageable) {
+        return productRepository.findByPageable(pageable).map(product ->{
+            List<CategoryResponse> categoryResponses = getProductCategoires(product.getProductId());
+            return ProductResponse.fromProductAndCategories(product, categoryResponses);
+        });
+
     }
 
     @Override
