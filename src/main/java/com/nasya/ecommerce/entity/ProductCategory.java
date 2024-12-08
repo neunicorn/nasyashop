@@ -32,6 +32,8 @@ public class ProductCategory {
 
     @Embeddable
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class ProductCategoryId{
 
         @Column(name = "product_id")
