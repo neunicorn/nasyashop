@@ -15,7 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = """
     SELECT * FROM users
         WHERE username= :keyword OR
-        mail = :keyword
+        email = :keyword
     """, nativeQuery = true)
     Optional<User> findByKeyword(String keyword);
 
