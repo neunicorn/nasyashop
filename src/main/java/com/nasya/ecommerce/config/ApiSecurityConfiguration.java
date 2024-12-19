@@ -17,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @AllArgsConstructor
 public class ApiSecurityConfiguration {
 
-    private final AuthenticationProvider authenticationProvider;
+//    private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsConfig corsConfig;
 
@@ -33,8 +33,7 @@ public class ApiSecurityConfiguration {
                             .anyRequest().authenticated();
                 }).sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                ).authenticationProvider(authenticationProvider)
-                .exceptionHandling(exception -> exception
+                ).exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
                             throw authException;
                         }));
