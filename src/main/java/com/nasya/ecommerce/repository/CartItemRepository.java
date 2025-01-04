@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
@@ -24,7 +25,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
         WHERE cart_id = :cartId
         AND product_id = :productId
     """, nativeQuery = true)
-    CartItem findByCartIdAndProductId(Long cartId, Long productId);
+    Optional<CartItem> findByCartIdAndProductId(Long cartId, Long productId);
 
     @Modifying
     @Query(value = """
