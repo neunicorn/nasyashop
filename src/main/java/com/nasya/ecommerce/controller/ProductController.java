@@ -3,6 +3,7 @@ package com.nasya.ecommerce.controller;
 import com.nasya.ecommerce.model.request.product.ProductRequest;
 import com.nasya.ecommerce.model.response.product.PaginatedProductResponse;
 import com.nasya.ecommerce.model.response.product.ProductResponse;
+import com.nasya.ecommerce.security.UserInfo;
 import com.nasya.ecommerce.service.ProductService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -13,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -64,6 +67,12 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<ProductResponse> createProduct(@RequestBody @Valid ProductRequest req){
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserInfo user = (UserInfo) auth.getPrincipal();
+
+        req.setUser(user.getUser());
+
         ProductResponse response = productService.create(req);
         return ResponseEntity
                 .status(HttpStatus.CREATED)

@@ -1,5 +1,6 @@
 package com.nasya.ecommerce.model.request.product;
 
+import com.nasya.ecommerce.entity.User;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,4 +39,6 @@ public class ProductRequest {
 
     @NotEmpty(message = "Harus ada minimal satu kategori yang dipilih")
     private List<Long> categoryIds;
+
+    private User user;
 }

@@ -16,31 +16,25 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "product")
-public class Product {
+@Table(name = "cart_items")
+public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "cart_item_id")
+    private Long cartItemId;
+
+    @Column(name = "cart_id")
+    private Long cartId;
+
     @Column(name = "product_id")
     private Long productId;
 
     @Column(nullable = false)
-    private String name;
+    private Integer quantity;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
-
-    @Column(name = "stock_quantity", nullable = false)
-    private Integer stockQuantity;
-
-    @Column(nullable = false)
-    private BigDecimal weight;
-
-    @Column(name = "user_id")
-    private Long userId;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -22,6 +22,7 @@ import java.util.List;
 public class ProductResponse {
 
     private Long productId;
+    private Long userId;
     private String name;
     private BigDecimal price;
     private String description;
@@ -36,6 +37,7 @@ public class ProductResponse {
     ) {
         return ProductResponse.builder()
                 .productId(product.getProductId())
+                .userId(product.getUserId())
                 .name(product.getName())
                 .price(product.getPrice())
                 .description(product.getDescription())
