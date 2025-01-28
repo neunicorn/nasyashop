@@ -35,7 +35,7 @@ public class OrderServiceImpl implements OrderService{
             throw new ResourceNotFoundException("cart item not found for checkout");
         }
 
-        UserAddress shippingAddress = addressRepository.findById(request.getUserAddressId())
+        UserAddressService shippingAddress = addressRepository.findById(request.getUserAddressId())
                 .orElseThrow(() -> new ResourceNotFoundException("shipping address not found"));
 
         Order newOrder = Order.builder()
@@ -116,17 +116,17 @@ public class OrderServiceImpl implements OrderService{
                 .toList();
 
         List<Product> products = productRepository.findAllById(productIds);
-        List<UserAddress> shippingAddress = addressRepository.findAllById(shippingIds);
+        List<UserAddressService> shippingAddress = addressRepository.findAllById(shippingIds);
 
         Map<Long, Product> productMap = products.stream()
                 .collect(Collectors.toMap(Product::getProductId, Function.identity()));
-        Map<Long, UserAddress> shippingAddressMap = shippingAddress.stream()
-                .collect(Collectors.toMap(UserAddress::getUserAddressId, Function.identity()));
+        Map<Long, UserAddressService> shippingAddressMap = shippingAddress.stream()
+                .collect(Collectors.toMap(UserAddressService::getUserAddressId, Function.identity()));
 
         return orderItems.stream()
                 .map(orderItem->{
                     Product product = productMap.get(orderItem.getProductId());
-                    UserAddress userAddress = shippingAddressMap.get(orderItem.getUserAddressId());
+                    UserAddressService userAddress = shippingAddressMap.get(orderItem.getUserAddressId());
 
                     if(product == null){
                         throw new ResourceNotFoundException("Product id not found");
