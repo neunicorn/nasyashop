@@ -52,6 +52,10 @@ public class UserAddressServiceImpl implements UserAddressService {
 
         List<UserAddress> userAddresses = userAddressRepository.findByUserId(userId);
 
+        if(userAddresses.isEmpty()){
+            throw new ResourceNotFoundException("user has not created an address");
+        }
+
         return userAddresses.stream()
                 .map(UserAddressResponse::fromUserAddress)
                 .toList();
