@@ -3,7 +3,9 @@ package com.nasya.ecommerce.service;
 import com.nasya.ecommerce.common.erros.ResourceNotFoundException;
 import com.nasya.ecommerce.entity.*;
 import com.nasya.ecommerce.model.request.checkout.CheckoutRequest;
+import com.nasya.ecommerce.model.request.checkout.ShippingRateRequest;
 import com.nasya.ecommerce.model.response.order.OrderItemResponse;
+import com.nasya.ecommerce.model.response.order.ShippingRateResponse;
 import com.nasya.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,10 @@ public class OrderServiceImpl implements OrderService{
     private final OrderItemRepository orderItemRepository;
     private final UserAddressRepository addressRepository;
     private final ProductRepository productRepository;
+    private final UserAddressRepository userAddressRepository;
+
+    private final BigDecimal TAX_RATE = BigDecimal.valueOf(0.03);
+    private final ShippingService shippingService;
 
     @Override
     @Transactional
@@ -35,7 +41,7 @@ public class OrderServiceImpl implements OrderService{
             throw new ResourceNotFoundException("cart item not found for checkout");
         }
 
-        UserAddressService shippingAddress = addressRepository.findById(request.getUserAddressId())
+        UserAddress shippingAddress = addressRepository.findById(request.getUserAddressId())
                 .orElseThrow(() -> new ResourceNotFoundException("shipping address not found"));
 
         Order newOrder = Order.builder()
@@ -64,10 +70,39 @@ public class OrderServiceImpl implements OrderService{
         orderItemRepository.saveAll(orderItems);
         cartItemRepository.deleteAll(selectedItems);
 
-        BigDecimal totalAmount = orderItems.stream()
+        BigDecimal subTotalAmount = orderItems.stream()
                 .map(orderItem -> orderItem.getPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        BigDecimal shippingFee = orderItems.stream()
+                .map(item -> {
+                    Optional<Product> product = productRepository.findById(item.getProductId());
+                    if (product.isEmpty()){
+                        return BigDecimal.ZERO;
+                    }
+                    Optional<UserAddress> sellerAddress = userAddressRepository
+                            .findByUserIdAndIsDefaultTrue(product.get().getUserId());
+                    if(sellerAddress.isEmpty()){
+                        return BigDecimal.ZERO;
+                    }
+
+                    BigDecimal totalWeight = product.get().getWeight().multiply(BigDecimal.valueOf(item.getQuantity()));
+                    //calculate shipping rate
+                    ShippingRateRequest rateRequest = ShippingRateRequest.builder()
+                            .totalWeightInGrams(totalWeight)
+                            .fromAddress(ShippingRateRequest.fromUserAddress(sellerAddress.get()))
+                            .toAddress(ShippingRateRequest.fromUserAddress(shippingAddress))
+                            .build();
+
+                    ShippingRateResponse rateResponse =  shippingService.calculateShippingRate(rateRequest);
+                    return rateResponse.getShippingFee();
+                })
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal taxFee = subTotalAmount.multiply(TAX_RATE);
+        BigDecimal totalAmount = subTotalAmount.add(taxFee).add(shippingFee);
+        saveOrder.setSubtotal(subTotalAmount);
+        saveOrder.setShippingFee(shippingFee);
         saveOrder.setTotalAmount(totalAmount);
         return orderRepository.save(saveOrder);
     }
@@ -116,17 +151,17 @@ public class OrderServiceImpl implements OrderService{
                 .toList();
 
         List<Product> products = productRepository.findAllById(productIds);
-        List<UserAddressService> shippingAddress = addressRepository.findAllById(shippingIds);
+        List<UserAddress> shippingAddress = addressRepository.findAllById(shippingIds);
 
         Map<Long, Product> productMap = products.stream()
                 .collect(Collectors.toMap(Product::getProductId, Function.identity()));
-        Map<Long, UserAddressService> shippingAddressMap = shippingAddress.stream()
-                .collect(Collectors.toMap(UserAddressService::getUserAddressId, Function.identity()));
+        Map<Long, UserAddress> shippingAddressMap = shippingAddress.stream()
+                .collect(Collectors.toMap(UserAddress::getUserAddressId, Function.identity()));
 
         return orderItems.stream()
                 .map(orderItem->{
                     Product product = productMap.get(orderItem.getProductId());
-                    UserAddressService userAddress = shippingAddressMap.get(orderItem.getUserAddressId());
+                    UserAddress userAddress = shippingAddressMap.get(orderItem.getUserAddressId());
 
                     if(product == null){
                         throw new ResourceNotFoundException("Product id not found");
