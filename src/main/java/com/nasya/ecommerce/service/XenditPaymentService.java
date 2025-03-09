@@ -70,6 +70,11 @@ public class XenditPaymentService implements PaymentService {
         }
     }
 
+    /**
+     *  This Function is for check is the payment already PAID or not
+     * @param paymentId
+     * @return boolean
+     */
     @Override
     public boolean verifyByPaymentId(String paymentId) {
         try {
@@ -83,5 +88,33 @@ public class XenditPaymentService implements PaymentService {
     @Override
     public void handleNotification(PaymentNotification paymentNotification) {
 
+        String invoiceId = paymentNotification.getId();
+        String status = paymentNotification.getStatus();
+
+        Order order = orderRepository.findByXenditInvoiceId(invoiceId)
+                .orElseThrow(()-> new ResourceNotFoundException("Order Not Found with invoice id "+ invoiceId));
+
+        order.setXenditPaymentStatus(status);
+        switch (status) {
+            case "PAID":
+                order.setStatus("PAID");
+                break;
+            case "EXPIRED":
+                order.setStatus("CANCELLED");
+                break;
+            case  "FAILED":
+                order.setStatus("PAYMENT_FAILED");
+                break;
+            case "PENDING":
+                order.setStatus("PENDING");
+                break;
+            default:
+        }
+
+        if(paymentNotification.getPaymentMethod() != null){
+            order.setXenditPaymentMethod(paymentNotification.getPaymentMethod());
+        }
+
+        orderRepository.save(order);
     }
 }

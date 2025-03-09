@@ -34,8 +34,8 @@ public class OrderController {
         UserInfo user = (UserInfo) auth.getPrincipal();
         request.setUserId(user.getUser().getUserId());
 
-        Order order = orderService.checkout(request);
-        return ResponseEntity.ok(OrderResponse.fromOrder(order));
+        OrderResponse order = orderService.checkout(request);
+        return ResponseEntity.ok(order);
     };
 
     @GetMapping("/{orderId}")

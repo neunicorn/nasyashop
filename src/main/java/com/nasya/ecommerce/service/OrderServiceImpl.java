@@ -5,9 +5,12 @@ import com.nasya.ecommerce.entity.*;
 import com.nasya.ecommerce.model.request.checkout.CheckoutRequest;
 import com.nasya.ecommerce.model.request.checkout.ShippingRateRequest;
 import com.nasya.ecommerce.model.response.order.OrderItemResponse;
+import com.nasya.ecommerce.model.response.order.OrderResponse;
+import com.nasya.ecommerce.model.response.order.PaymentResponse;
 import com.nasya.ecommerce.model.response.order.ShippingRateResponse;
 import com.nasya.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService{
 
     private final CartItemRepository cartItemRepository;
@@ -32,10 +36,11 @@ public class OrderServiceImpl implements OrderService{
 
     private final BigDecimal TAX_RATE = BigDecimal.valueOf(0.03);
     private final ShippingService shippingService;
+    private final PaymentService paymentService;
 
     @Override
     @Transactional
-    public Order checkout(CheckoutRequest request) {
+    public OrderResponse checkout(CheckoutRequest request) {
         List<CartItem> selectedItems = cartItemRepository.findAllById(request.getSelectedCartItemIds());
         if(selectedItems.isEmpty()){
             throw new ResourceNotFoundException("cart item not found for checkout");
@@ -104,7 +109,30 @@ public class OrderServiceImpl implements OrderService{
         saveOrder.setSubtotal(subTotalAmount);
         saveOrder.setShippingFee(shippingFee);
         saveOrder.setTotalAmount(totalAmount);
-        return orderRepository.save(saveOrder);
+        orderRepository.save(saveOrder);
+
+        //interact with xendit API
+        //generate payment url
+        String paymentUrl;
+
+        try{
+            PaymentResponse paymentResponse = paymentService.create(saveOrder);
+            saveOrder.setXenditInvoiceId(paymentResponse.getXenditInvoiceId());
+            saveOrder.setXenditPaymentStatus(paymentResponse.getXenditInvoiceStatus());
+            paymentUrl = paymentResponse.getXenditPaymentUrl();
+
+            orderRepository.save(saveOrder);
+        }catch (Exception e){
+            log.error(e.getMessage());
+            saveOrder.setStatus("PAYMENT_FAILED");
+
+            orderRepository.save(saveOrder);
+            return OrderResponse.fromOrder(saveOrder);
+        }
+
+        OrderResponse orderResponse = OrderResponse.fromOrder(saveOrder);
+        orderResponse.setXenditPaymentUrl(paymentUrl);
+        return orderResponse;
     }
 
     @Override
