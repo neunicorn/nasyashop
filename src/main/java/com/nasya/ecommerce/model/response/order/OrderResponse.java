@@ -3,6 +3,7 @@ package com.nasya.ecommerce.model.response.order;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nasya.ecommerce.entity.Order;
+import com.nasya.ecommerce.model.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,7 +26,7 @@ public class OrderResponse implements Serializable {
     private BigDecimal shippingFee;
     private BigDecimal taxFee;
     private BigDecimal totalAmount;
-    private String status;
+    private OrderStatus status;
     private LocalDateTime orderDate;
     private String xenditInvoiceId;
     private String xenditPaymentStatus;

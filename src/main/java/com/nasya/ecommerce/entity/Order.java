@@ -1,5 +1,6 @@
 package com.nasya.ecommerce.entity;
 
+import com.nasya.ecommerce.model.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,7 +39,9 @@ public class Order {
     @Column(name = "total_amount")
     private BigDecimal totalAmount;
 
-    private String status;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
 
     @Column(name = "order_date")
     private LocalDateTime orderDate;

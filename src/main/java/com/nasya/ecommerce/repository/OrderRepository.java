@@ -2,6 +2,7 @@ package com.nasya.ecommerce.repository;
 
 import com.nasya.ecommerce.entity.Cart;
 import com.nasya.ecommerce.entity.Order;
+import com.nasya.ecommerce.model.OrderStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +16,7 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByUserId(Long userId);
-    List<Order> findByStatus(String status);
+    List<Order> findByStatus(OrderStatus status);
 
 
     @Query(value = """
@@ -27,4 +28,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByXenditInvoiceId(String xenditInvoiceId);
 
+    List<Order> findByStatusAndOrderDateBefore(OrderStatus status, LocalDateTime dateTime);
 }

@@ -3,6 +3,7 @@ package com.nasya.ecommerce.service;
 import com.nasya.ecommerce.common.erros.ResourceNotFoundException;
 import com.nasya.ecommerce.entity.Order;
 import com.nasya.ecommerce.entity.User;
+import com.nasya.ecommerce.model.OrderStatus;
 import com.nasya.ecommerce.model.response.order.OrderResponse;
 import com.nasya.ecommerce.model.response.order.PaymentNotification;
 import com.nasya.ecommerce.model.response.order.PaymentResponse;
@@ -97,16 +98,16 @@ public class XenditPaymentService implements PaymentService {
         order.setXenditPaymentStatus(status);
         switch (status) {
             case "PAID":
-                order.setStatus("PAID");
+                order.setStatus(OrderStatus.PAID);
                 break;
             case "EXPIRED":
-                order.setStatus("CANCELLED");
+                order.setStatus(OrderStatus.CANCELLED);
                 break;
             case  "FAILED":
-                order.setStatus("PAYMENT_FAILED");
+                order.setStatus(OrderStatus.PAYMENT_FAILED);
                 break;
             case "PENDING":
-                order.setStatus("PENDING");
+                order.setStatus(OrderStatus.PENDING);
                 break;
             default:
         }
@@ -116,5 +117,17 @@ public class XenditPaymentService implements PaymentService {
         }
 
         orderRepository.save(order);
+    }
+
+    @Override
+    public void cancelXenditInvoice(Order order) {
+        try{
+            Invoice invoice = Invoice.expire(order.getXenditInvoiceId());
+            order.setXenditPaymentStatus(invoice.getStatus());
+            orderRepository.save(order);
+        } catch (XenditException e) {
+            log.error("Error while request invoice cancellation with xendit invoice id: " + order.getXenditInvoiceId());
+            throw new RuntimeException(e);
+        }
     }
 }

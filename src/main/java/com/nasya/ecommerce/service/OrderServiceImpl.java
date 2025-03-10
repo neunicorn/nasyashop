@@ -1,7 +1,9 @@
 package com.nasya.ecommerce.service;
 
+import com.nasya.ecommerce.common.OrderStateTransition;
 import com.nasya.ecommerce.common.erros.ResourceNotFoundException;
 import com.nasya.ecommerce.entity.*;
+import com.nasya.ecommerce.model.OrderStatus;
 import com.nasya.ecommerce.model.request.checkout.CheckoutRequest;
 import com.nasya.ecommerce.model.request.checkout.ShippingRateRequest;
 import com.nasya.ecommerce.model.response.order.OrderItemResponse;
@@ -11,10 +13,12 @@ import com.nasya.ecommerce.model.response.order.ShippingRateResponse;
 import com.nasya.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +41,7 @@ public class OrderServiceImpl implements OrderService{
     private final BigDecimal TAX_RATE = BigDecimal.valueOf(0.03);
     private final ShippingService shippingService;
     private final PaymentService paymentService;
+    private final XenditPaymentService xenditPaymentService;
 
     @Override
     @Transactional
@@ -51,7 +56,7 @@ public class OrderServiceImpl implements OrderService{
 
         Order newOrder = Order.builder()
                 .userId(request.getUserId())
-                .status("PENDING")
+                .status(OrderStatus.PENDING)
                 .orderDate(LocalDateTime.now())
                 .totalAmount(BigDecimal.ZERO)
                 .taxFee(BigDecimal.ZERO)
@@ -124,7 +129,7 @@ public class OrderServiceImpl implements OrderService{
             orderRepository.save(saveOrder);
         }catch (Exception e){
             log.error(e.getMessage());
-            saveOrder.setStatus("PAYMENT_FAILED");
+            saveOrder.setStatus(OrderStatus.PAYMENT_FAILED);
 
             orderRepository.save(saveOrder);
             return OrderResponse.fromOrder(saveOrder);
@@ -146,7 +151,7 @@ public class OrderServiceImpl implements OrderService{
     }
 
     @Override
-    public List<Order> findOrdersByStatus(String status) {
+    public List<Order> findOrdersByStatus(OrderStatus status) {
         return orderRepository.findByStatus(status);
     }
 
@@ -155,12 +160,13 @@ public class OrderServiceImpl implements OrderService{
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("order not found"));
-        if(!order.getStatus().equals("PENDING")){
+
+        if(!OrderStateTransition.isValidTransition(order.getStatus(), OrderStatus.CANCELLED)){
             throw new IllegalStateException("order cannot be cancelled");
         }
-
-        order.setStatus("CANCELLED");
+        order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
+        xenditPaymentService.cancelXenditInvoice(order);
     }
 
     @Override
@@ -204,15 +210,40 @@ public class OrderServiceImpl implements OrderService{
     }
 
     @Override
-    public void updateOrderStatus(Long orderId, String newStatus) {
+    @Transactional
+    public void updateOrderStatus(Long orderId, OrderStatus newStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("order not found"));
+
+        if(!OrderStateTransition.isValidTransition(order.getStatus(), newStatus)){
+            throw new IllegalStateException("Order with current status: "+ order.getStatus() +
+                    " Cannot be updated to: " + newStatus);
+        }
+
         order.setStatus(newStatus);
         orderRepository.save(order);
+
+        if(newStatus.equals(OrderStatus.CANCELLED)){
+            xenditPaymentService.cancelXenditInvoice(order);
+        }
     }
 
     @Override
     public Double calculateOrderTotal(Long orderId) {
         return orderItemRepository.calculateTotalOrder(orderId);
+    }
+
+    @Scheduled(cron = "0 0/1 * 1/1 * ?")
+    @Transactional
+    public void cancelUnpaidOrders(){
+        LocalDateTime cancelThreshold = LocalDateTime.now().minusDays(1);
+        List<Order> unpaidOrders = orderRepository
+                .findByStatusAndOrderDateBefore(OrderStatus.PENDING, cancelThreshold);
+
+        for(Order order: unpaidOrders){
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+            xenditPaymentService.cancelXenditInvoice(order);
+        }
     }
 }

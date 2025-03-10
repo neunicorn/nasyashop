@@ -1,9 +1,12 @@
 package com.nasya.ecommerce.service;
 
+import com.nasya.ecommerce.common.OrderStateTransition;
+import com.nasya.ecommerce.common.erros.BadRequestException;
 import com.nasya.ecommerce.common.erros.ResourceNotFoundException;
 import com.nasya.ecommerce.entity.Order;
 import com.nasya.ecommerce.entity.OrderItem;
 import com.nasya.ecommerce.entity.Product;
+import com.nasya.ecommerce.model.OrderStatus;
 import com.nasya.ecommerce.model.request.checkout.ShippingOrderRequest;
 import com.nasya.ecommerce.model.request.checkout.ShippingRateRequest;
 import com.nasya.ecommerce.model.response.order.ShippingOrderResponse;
@@ -53,7 +56,12 @@ public class ShippingServiceImpl implements ShippingService{
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(()-> new ResourceNotFoundException("order dengan id "+ request.getOrderId() + " tidak ditemukan"));
 
-        order.setStatus("SHIPPING");
+        if(!OrderStateTransition.isValidTransition(order.getStatus(), OrderStatus.SHIPPED)){
+            throw new IllegalStateException("Invalid Order Status Transition from " +
+                    order.getStatus() + " To status: SHIPPED");
+        }
+
+        order.setStatus(OrderStatus.SHIPPED);
         order.setAwbNumber(awbNumber);
         orderRepository.save(order);
 

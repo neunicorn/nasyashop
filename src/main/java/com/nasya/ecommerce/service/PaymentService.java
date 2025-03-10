@@ -13,4 +13,6 @@ public interface PaymentService {
     boolean verifyByPaymentId(String paymentId);
 
     void handleNotification(PaymentNotification paymentNotification);
+
+    void cancelXenditInvoice(Order order);
 }

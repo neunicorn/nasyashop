@@ -1,6 +1,8 @@
 package com.nasya.ecommerce.controller;
 
+import com.nasya.ecommerce.common.erros.BadRequestException;
 import com.nasya.ecommerce.entity.Order;
+import com.nasya.ecommerce.model.OrderStatus;
 import com.nasya.ecommerce.model.request.checkout.CheckoutRequest;
 import com.nasya.ecommerce.model.response.order.OrderItemResponse;
 import com.nasya.ecommerce.model.response.order.OrderResponse;
@@ -86,7 +88,13 @@ public class OrderController {
 
     @PutMapping("/{orderId}/status")
     public ResponseEntity<Void> updateOrderStatus(@PathVariable Long orderId, @RequestParam String newStatus){
-        orderService.updateOrderStatus(orderId, newStatus);
+        OrderStatus status;
+        try {
+            status = OrderStatus.valueOf(newStatus);
+        } catch (IllegalArgumentException e){
+            throw new BadRequestException("Cannot Update status with status "+ newStatus);
+        }
+        orderService.updateOrderStatus(orderId, status);
         return ResponseEntity.ok().build();
     }
 
