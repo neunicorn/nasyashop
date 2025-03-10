@@ -20,8 +20,8 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     SELECT *.oi FROM order_items oi
         JOIN orders o ON oi.order_id = o.id
         JOIN product p ON o.product_id = p.id
-        WHERE o.user_id = :user_id 
-        AND oi.order_id = :order_id
+        WHERE o.user_id = :userId 
+        AND oi.product_id = :product
     """, nativeQuery = true)
     List<OrderItem> findByUserAndProduct(Long userId, Product product);
 

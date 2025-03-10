@@ -28,7 +28,7 @@ public class ApiSecurityConfiguration {
                         .configurationSource(corsConfig))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((request) ->{
-                    request.requestMatchers("/auth/**", "/api-docs/**", "/swagger-ui/**")
+                    request.requestMatchers("/auth/**", "/api-docs/**", "/swagger-ui/**", "/webhook/xendit")
                             .permitAll()
                             .anyRequest().authenticated();
                 }).sessionManagement(session -> session
