@@ -6,13 +6,13 @@ import com.nasya.ecommerce.entity.*;
 import com.nasya.ecommerce.model.OrderStatus;
 import com.nasya.ecommerce.model.request.checkout.CheckoutRequest;
 import com.nasya.ecommerce.model.request.checkout.ShippingRateRequest;
-import com.nasya.ecommerce.model.response.order.OrderItemResponse;
-import com.nasya.ecommerce.model.response.order.OrderResponse;
-import com.nasya.ecommerce.model.response.order.PaymentResponse;
-import com.nasya.ecommerce.model.response.order.ShippingRateResponse;
+import com.nasya.ecommerce.model.response.order.*;
+import com.nasya.ecommerce.model.response.product.PaginatedProductResponse;
 import com.nasya.ecommerce.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,6 +151,12 @@ public class OrderServiceImpl implements OrderService{
     }
 
     @Override
+    public Page<OrderResponse> findOrderByUserIdAndPageable(Long userId, Pageable pageable) {
+        return orderRepository.findByUserIdByPageable(userId, pageable)
+                .map(OrderResponse::fromOrder);
+    }
+
+    @Override
     public List<Order> findOrdersByStatus(OrderStatus status) {
         return orderRepository.findByStatus(status);
     }
@@ -231,6 +237,17 @@ public class OrderServiceImpl implements OrderService{
     @Override
     public Double calculateOrderTotal(Long orderId) {
         return orderItemRepository.calculateTotalOrder(orderId);
+    }
+
+    @Override
+    public PaginatedOrderResponse convertProductPage(Page<OrderResponse> response) {
+        return PaginatedOrderResponse.builder()
+                .data(response.getContent())
+                .pageNo(response.getNumber())
+                .pageSize(response.getSize())
+                .totalElements(response.getNumberOfElements())
+                .totalPages(response.getTotalPages())
+                .build();
     }
 
     @Scheduled(cron = "0 0/1 * 1/1 * ?")

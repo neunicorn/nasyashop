@@ -1,5 +1,6 @@
 package com.nasya.ecommerce.controller;
 
+import com.nasya.ecommerce.common.PageUtil;
 import com.nasya.ecommerce.model.request.product.ProductRequest;
 import com.nasya.ecommerce.model.response.product.PaginatedProductResponse;
 import com.nasya.ecommerce.model.response.product.ProductResponse;
@@ -45,15 +46,8 @@ public class ProductController {
     ){
         // implement multi sort
         // ex: sort asc by product name, desc by price product
-        List<Sort.Order> orders = new ArrayList<>();
-        if(sort[0].contains(",")){
-            for(String sortOrder:sort){
-                String[] _sort = sortOrder.split(",");
-                orders.add(new Sort.Order(getSortDirection(_sort[1]),_sort[0]));
-            }
-        }else {
-            orders.add(new Sort.Order(getSortDirection(sort[1]),sort[0]));
-        }
+
+        List<Sort.Order> orders = PageUtil.parseSortOrderRequest(sort);
         Pageable pageable = PageRequest.of(page, size, Sort.by(orders));
         Page<ProductResponse> response;
 

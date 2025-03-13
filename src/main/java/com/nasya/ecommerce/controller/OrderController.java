@@ -1,17 +1,24 @@
 package com.nasya.ecommerce.controller;
 
+import com.nasya.ecommerce.common.PageUtil;
 import com.nasya.ecommerce.common.erros.BadRequestException;
 import com.nasya.ecommerce.entity.Order;
 import com.nasya.ecommerce.model.OrderStatus;
 import com.nasya.ecommerce.model.request.checkout.CheckoutRequest;
 import com.nasya.ecommerce.model.response.order.OrderItemResponse;
 import com.nasya.ecommerce.model.response.order.OrderResponse;
+import com.nasya.ecommerce.model.response.order.PaginatedOrderResponse;
+import com.nasya.ecommerce.model.response.product.ProductResponse;
 import com.nasya.ecommerce.security.UserInfo;
 import com.nasya.ecommerce.service.OrderService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -60,15 +67,19 @@ public class OrderController {
 
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> findOrderByUserId(){
+    public ResponseEntity<PaginatedOrderResponse> findOrderByUserId(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "order_id,desc") String[] sort
+    ){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserInfo user = (UserInfo) auth.getPrincipal();
 
-        List<Order> orders = orderService.findOrderByUserId(user.getUser().getUserId());
-        List<OrderResponse> response = orders.stream()
-                .map(OrderResponse::fromOrder).toList();
+        List<Sort.Order> sortOrder = PageUtil.parseSortOrderRequest(sort);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortOrder));
 
-        return ResponseEntity.ok(response);
+        Page<OrderResponse> userOrders = orderService.findOrderByUserIdAndPageable(user.getUser().getUserId(), pageable);
+        return ResponseEntity.ok(orderService.convertProductPage(userOrders));
     }
 
     @PutMapping("/{orderId}/cancel")
