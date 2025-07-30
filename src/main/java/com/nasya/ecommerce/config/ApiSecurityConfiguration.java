@@ -30,12 +30,16 @@ public class ApiSecurityConfiguration {
                 .authorizeHttpRequests((request) ->{
                     request.requestMatchers("/auth/**", "/api-docs/**", "/swagger-ui/**", "/webhook/xendit")
                             .permitAll()
+                            .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                             .anyRequest().authenticated();
                 }).sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 ).exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
                             throw authException;
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            throw accessDeniedException;
                         }));
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

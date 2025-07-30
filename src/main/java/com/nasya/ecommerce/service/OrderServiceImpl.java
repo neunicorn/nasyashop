@@ -172,7 +172,10 @@ public class OrderServiceImpl implements OrderService{
         }
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
+
+        if(order.getStatus().equals(OrderStatus.CANCELLED)){
         xenditPaymentService.cancelXenditInvoice(order);
+        }
     }
 
     @Override

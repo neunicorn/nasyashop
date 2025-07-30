@@ -17,6 +17,7 @@ public class PageUtil {
         }else {
             orders.add(new Sort.Order(getSortDirection(sort[1]),sort[0]));
         }
+        return orders;
     }
 
     private static Sort.Direction getSortDirection(String direction){
