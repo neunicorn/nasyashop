@@ -1,6 +1,7 @@
 package com.nasya.ecommerce.service;
 
 import com.nasya.ecommerce.common.erros.BadRequestException;
+import com.nasya.ecommerce.common.erros.InventoryException;
 import com.nasya.ecommerce.common.erros.ResourceNotFoundException;
 import com.nasya.ecommerce.entity.Cart;
 import com.nasya.ecommerce.entity.CartItem;
@@ -40,10 +41,14 @@ public class CartServiceImpl implements CartService {
             return cartRepository.save(newCart);
         });
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithPessimisticLock(productId)
                 .orElseThrow(()-> new ResourceNotFoundException("Product with id " + productId + " is not found" ));
         if(product.getUserId().equals(userId)) {
             throw new BadRequestException("Cannot add your own product to cart");
+        }
+
+        if(product.getStockQuantity() <= 0){
+            throw new InventoryException("Product with id " + productId + " is not enough stock");
         }
 
         Optional<CartItem> existingItem = cartItemRepository.findByCartIdAndProductId(cart.getCartId(), product.getProductId());

@@ -1,6 +1,7 @@
 package com.nasya.ecommerce.service;
 
 import com.nasya.ecommerce.common.OrderStateTransition;
+import com.nasya.ecommerce.common.erros.InventoryException;
 import com.nasya.ecommerce.common.erros.ResourceNotFoundException;
 import com.nasya.ecommerce.entity.*;
 import com.nasya.ecommerce.model.OrderStatus;
@@ -42,18 +43,33 @@ public class OrderServiceImpl implements OrderService{
     private final ShippingService shippingService;
     private final PaymentService paymentService;
     private final XenditPaymentService xenditPaymentService;
+    private final InventoryService inventoryService;
 
     @Override
     @Transactional
     public OrderResponse checkout(CheckoutRequest request) {
+
+        //get item(product) that want to checkout from the cart
         List<CartItem> selectedItems = cartItemRepository.findAllById(request.getSelectedCartItemIds());
+        //check if the cart is empty so checkout cannot be continue
         if(selectedItems.isEmpty()){
             throw new ResourceNotFoundException("cart item not found for checkout");
         }
 
+        // get user address for shipping
         UserAddress shippingAddress = addressRepository.findById(request.getUserAddressId())
                 .orElseThrow(() -> new ResourceNotFoundException("shipping address not found"));
 
+        // Mapping product ID and the quantities of the product
+        Map<Long, Integer> productQuantities = selectedItems.stream()
+                .collect(Collectors.toMap(CartItem::getProductId, CartItem::getQuantity));
+
+        // check the quantities each product that want to add to the cart
+        if(!inventoryService.checkAndLockInventory(productQuantities)){
+            throw new InventoryException("Insufficeient inventory for one or more products");
+        }
+
+        // make new order object
         Order newOrder = Order.builder()
                 .userId(request.getUserId())
                 .status(OrderStatus.PENDING)
@@ -66,6 +82,7 @@ public class OrderServiceImpl implements OrderService{
 
         Order saveOrder = orderRepository.save(newOrder);
 
+        // input all the item that want to checkout to order item
         List<OrderItem> orderItems = selectedItems.stream()
                 .map(cartItem -> {
                     return OrderItem.builder()
@@ -125,8 +142,9 @@ public class OrderServiceImpl implements OrderService{
             saveOrder.setXenditInvoiceId(paymentResponse.getXenditInvoiceId());
             saveOrder.setXenditPaymentStatus(paymentResponse.getXenditInvoiceStatus());
             paymentUrl = paymentResponse.getXenditPaymentUrl();
-
             orderRepository.save(saveOrder);
+
+            inventoryService.decreaseQuantity(productQuantities);
         }catch (Exception e){
             log.error(e.getMessage());
             saveOrder.setStatus(OrderStatus.PAYMENT_FAILED);
@@ -137,6 +155,7 @@ public class OrderServiceImpl implements OrderService{
 
         OrderResponse orderResponse = OrderResponse.fromOrder(saveOrder);
         orderResponse.setXenditPaymentUrl(paymentUrl);
+
         return orderResponse;
     }
 
@@ -170,11 +189,17 @@ public class OrderServiceImpl implements OrderService{
         if(!OrderStateTransition.isValidTransition(order.getStatus(), OrderStatus.CANCELLED)){
             throw new IllegalStateException("order cannot be cancelled");
         }
+
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+
+        Map<Long, Integer> orderItemsQuantity =  orderItems.stream()
+                        .collect(Collectors.toMap(OrderItem::getProductId, OrderItem::getQuantity));
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
 
         if(order.getStatus().equals(OrderStatus.CANCELLED)){
         xenditPaymentService.cancelXenditInvoice(order);
+        inventoryService.increaseQuantity(orderItemsQuantity);
         }
     }
 
@@ -234,6 +259,11 @@ public class OrderServiceImpl implements OrderService{
 
         if(newStatus.equals(OrderStatus.CANCELLED)){
             xenditPaymentService.cancelXenditInvoice(order);
+            List<OrderItem> orderItems  = orderItemRepository.findByOrderId(orderId);
+            Map<Long, Integer> orderItemsQuantity =  orderItems.stream()
+                    .collect(Collectors.toMap(OrderItem::getProductId, OrderItem::getQuantity));
+
+            inventoryService.increaseQuantity(orderItemsQuantity);
         }
     }
 
