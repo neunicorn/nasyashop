@@ -38,7 +38,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(value = """
-    SELECT * FROM product where product_id = :id
+    SELECT p FROM Product p  where p.id = :id
 """, nativeQuery = true)
     Optional<Product> findByIdWithPessimisticLock(@Param("id") Long id);
 }
