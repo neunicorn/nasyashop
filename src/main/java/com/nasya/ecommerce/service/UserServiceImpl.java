@@ -29,6 +29,10 @@ public class UserServiceImpl implements UserService {
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private final CacheService cacheService;
+    private final String USER_CACHE_KEY = "cache:user:";
+    private final String USER_ROLES_CACHE_KEY = "cache:user:role";
+
     @Override
     @Transactional
     public UserResponse register(UserRegisterRequest request) {
@@ -119,6 +123,11 @@ public class UserServiceImpl implements UserService {
         }
         List<Role> roles = roleRepository.findByUserId(userId);
         userRepository.save(user);
+
+        // delete cache because the data has been changed
+        cacheService.evict(USER_CACHE_KEY + user.getUsername());
+        cacheService.evict(USER_ROLES_CACHE_KEY + roles);
+
         return UserResponse.fromUserAndRoles(user, roles);
     }
 

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,9 @@ public class ProductServiceImpl implements ProductService{
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductCategoryRepository productCategoryRepository;
+
+    private final String PRODUCT_CACHE_KEY = "products:";
+    private final CacheService cacheService;
 
 
     @Override
@@ -59,13 +63,24 @@ public class ProductServiceImpl implements ProductService{
 
     @Override
     public ProductResponse findById(Long productId) {
+        String cacheKey = PRODUCT_CACHE_KEY + productId;
+        // search product on redis first
+        Optional<ProductResponse> cachedProduct = cacheService.get(cacheKey, ProductResponse.class);
+        if(cachedProduct.isPresent()){
+            // return product data if the data already cached
+            return cachedProduct.get();
+        }
+
         //get the product from the product table where productId
         Product product = productRepository.findById(productId)
                 .orElseThrow(()-> new ResourceNotFoundException("Product not found with id: " +productId));
         // get the category response
         List<CategoryResponse> categoryResponses = getProductCategoires(productId);
 
-        return ProductResponse.fromProductAndCategories(product, categoryResponses);
+        ProductResponse productResponse =  ProductResponse.fromProductAndCategories(product, categoryResponses);
+        // save the product to redis
+        cacheService.put(cacheKey, productResponse);
+        return productResponse;
     }
 
     @Override
@@ -98,6 +113,10 @@ public class ProductServiceImpl implements ProductService{
         List<CategoryResponse> categoryResponseList = categories.stream()
                 .map(CategoryResponse::fromCategory)
                 .toList();
+
+        //save product to cache (REDIS)
+        String cacheKey = PRODUCT_CACHE_KEY + saveProduct.getProductId();
+        cacheService.put(cacheKey, categoryResponseList);
 
         return ProductResponse.fromProductAndCategories(saveProduct, categoryResponseList);
     }
@@ -143,6 +162,10 @@ public class ProductServiceImpl implements ProductService{
         List<CategoryResponse> categoryResponseList = categories.stream()
                 .map(CategoryResponse::fromCategory)
                 .toList();
+
+
+        String cacheKey = PRODUCT_CACHE_KEY + productId;
+        cacheService.evict(cacheKey);
 
         return ProductResponse.fromProductAndCategories(existingProduct,categoryResponseList);
     }
