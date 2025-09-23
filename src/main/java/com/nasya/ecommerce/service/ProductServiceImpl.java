@@ -28,6 +28,7 @@ public class ProductServiceImpl implements ProductService{
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductCategoryRepository productCategoryRepository;
+    private final RateLimittingSevice rateLimitingSevice;
 
     private final String PRODUCT_CACHE_KEY = "products:";
     private final CacheService cacheService;
@@ -45,11 +46,11 @@ public class ProductServiceImpl implements ProductService{
 
     @Override
     public Page<ProductResponse> findByPage(Pageable pageable) {
-        return productRepository.findByPageable(pageable).map(product ->{
-            List<CategoryResponse> categoryResponses = getProductCategoires(product.getProductId());
-            return ProductResponse.fromProductAndCategories(product, categoryResponses);
-        });
-
+        return rateLimitingSevice.executeWithRateimit("product_listing",
+                () -> productRepository.findByPageable(pageable).map(product ->{
+        List<CategoryResponse> categoryResponses = getProductCategoires(product.getProductId());
+        return ProductResponse.fromProductAndCategories(product, categoryResponses);
+    }));
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.nasya.ecommerce.config.middleware;
 
 import com.nasya.ecommerce.common.erros.*;
 import com.nasya.ecommerce.model.response.ErrorResponse;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -146,4 +147,13 @@ public class GenericExceptionHandler {
                 .build();
     }
 
+    @ExceptionHandler(RequestNotPermitted.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public @ResponseBody ErrorResponse handleRateLimitException(HttpServletRequest req, Exception e){
+        return ErrorResponse.builder()
+                .code(HttpStatus.TOO_MANY_REQUESTS.value())
+                .message(e.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
 }
