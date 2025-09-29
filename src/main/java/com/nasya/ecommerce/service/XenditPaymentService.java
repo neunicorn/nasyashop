@@ -27,6 +27,7 @@ public class XenditPaymentService implements PaymentService {
 
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final EmailService emailService;
 
 
     @Override
@@ -99,15 +100,19 @@ public class XenditPaymentService implements PaymentService {
         switch (status) {
             case "PAID":
                 order.setStatus(OrderStatus.PAID);
+                emailService.notifySuccessfulPayment(order);
                 break;
             case "EXPIRED":
                 order.setStatus(OrderStatus.CANCELLED);
+                emailService.notifyFailedPayment(order);
                 break;
             case  "FAILED":
                 order.setStatus(OrderStatus.PAYMENT_FAILED);
+                emailService.notifyFailedPayment(order);
                 break;
             case "PENDING":
                 order.setStatus(OrderStatus.PENDING);
+                emailService.notifyFailedPayment(order);
                 break;
             default:
         }
