@@ -41,6 +41,7 @@ public class AddressController {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserInfo user = (UserInfo) auth.getPrincipal();
+        log.info(String.valueOf(user));
 
         List<UserAddressResponse> response = userAddressService.findByUserId(user.getUser().getUserId());
         return ResponseEntity.ok(response);

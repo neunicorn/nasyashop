@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,16 +21,12 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtProvider jwtProvider;
-
-    @Autowired
-    private CustomUserDetails userDetailsService;
-
-    @Autowired
-    private HandlerExceptionResolver handlerExceptionResolver;
+    private final JwtProvider jwtProvider;
+    private final CustomUserDetails userDetailsService;
+    private final HandlerExceptionResolver handlerExceptionResolver;
 
 
     @Override
@@ -60,8 +57,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 if(userDetails != null){
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            userDetails.getUsername(),
-                            userDetails.getPassword(),
+                            userDetails,
+                            null,
                             userDetails.getAuthorities()
                     );
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

@@ -21,7 +21,7 @@ public class JwtSecretConfig {
     private Duration jwtExpirationTime;
 
     @Bean
-    public SecretKey signKey(){
+    public SecretKey signKey(@Value("${app.jwt.secret}") String secretString){
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 }

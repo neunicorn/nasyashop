@@ -34,4 +34,5 @@ build/
 
 #properties or enivorment var
 *.properties
+application.properties
 

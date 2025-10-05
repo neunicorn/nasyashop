@@ -76,12 +76,11 @@ public class GenericExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+//    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public @ResponseBody ErrorResponse handleGenericException(
             HttpServletRequest req,
             HttpServletResponse res,
             Exception e){
-        log.error("Terjadi Error Status: "+HttpStatus.INTERNAL_SERVER_ERROR+" Dengan Pesan: "+ e.getMessage());
 
         if(e instanceof BadCredentialsException ||
                 e instanceof AccountStatusException ||
@@ -91,6 +90,7 @@ public class GenericExceptionHandler {
                 e instanceof AuthenticationException ||
                 e instanceof InsufficientAuthenticationException
         ){
+            log.error("Terjadi Error Status: "+HttpStatus.FORBIDDEN+" Dengan Pesan: "+ e.getMessage());
             res.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return ErrorResponse.builder()
                     .code(HttpStatus.FORBIDDEN.value())
@@ -99,6 +99,7 @@ public class GenericExceptionHandler {
                     .build();
         }
 
+        log.error("Terjadi Error Status: "+HttpStatus.INTERNAL_SERVER_ERROR+" Dengan Pesan: "+ e.getMessage());
         res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         return ErrorResponse.builder()
                 .code(HttpStatus.INTERNAL_SERVER_ERROR.value())

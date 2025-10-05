@@ -31,29 +31,29 @@ public class CustomUserDetails implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         //get user from redis
-        String userCacheKey = USER_CACHE_KEY + username;
-        String userRolesCacheKey = USER_ROLES_CACHE_KEY + username;
+//        String userCacheKey = USER_CACHE_KEY + username;
+//        String userRolesCacheKey = USER_ROLES_CACHE_KEY + username;
+//
+//        Optional<User> userOpt = cacheService.get(userCacheKey, User.class);
+//        Optional <List<Role>> rolesOpt = cacheService.get(userRolesCacheKey, new TypeReference<List<Role>>() {
+//        });
 
-        Optional<User> userOpt = cacheService.get(userCacheKey, User.class);
-        Optional <List<Role>> rolesOpt = cacheService.get(userRolesCacheKey, new TypeReference<List<Role>>() {
-        });
-
-        // return if the user already login and the user already cached
-        if(userOpt.isPresent() && rolesOpt.isPresent()) {
-            return UserInfo.builder()
-                    .roles(rolesOpt.get())
-                    .user(userOpt.get())
-                    .build();
-        }
+//        // return if the user already login and the user already cached
+//        if(userOpt.isPresent() && rolesOpt.isPresent()) {
+//            return UserInfo.builder()
+//                    .roles(rolesOpt.get())
+//                    .user(userOpt.get())
+//                    .build();
+//        }
 
         User user = userRepository.findByKeyword(username)
                 .orElseThrow(()-> new UserNotFoundException("USER NOT FOUND"));
 
         List<Role> roles = roleRepository.findByUserId(user.getUserId());
 
-        // cached new logged user
-        cacheService.put(USER_CACHE_KEY + user.getUserId(), user);
-        cacheService.put(USER_ROLES_CACHE_KEY + user.getUserId(), roles);
+//        // cached new logged user
+//        cacheService.put(USER_CACHE_KEY + user.getUserId(), user);
+//        cacheService.put(USER_ROLES_CACHE_KEY + user.getUserId(), roles);
 
         return UserInfo.builder()
                 .roles(roles)

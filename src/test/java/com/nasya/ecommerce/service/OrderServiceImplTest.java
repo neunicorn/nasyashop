@@ -8,7 +8,6 @@ import com.nasya.ecommerce.model.response.order.OrderResponse;
 import com.nasya.ecommerce.model.response.order.PaymentResponse;
 import com.nasya.ecommerce.model.response.order.ShippingRateResponse;
 import com.nasya.ecommerce.repository.*;
-import io.jsonwebtoken.lang.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,17 +34,13 @@ class OrderServiceImplTest {
     @Mock
     private OrderItemRepository orderItemRepository;
     @Mock
-    private UserAddressRepository addressRepository;
+    private UserAddressRepository userAddressRepository;
     @Mock
     private ProductRepository productRepository;
-    @Mock
-    private UserAddressRepository userAddressRepository;
     @Mock
     private ShippingService shippingService;
     @Mock
     private PaymentService paymentService;
-    @Mock
-    private XenditPaymentService xenditPaymentService;
     @Mock
     private InventoryService inventoryService;
 
@@ -83,14 +78,15 @@ class OrderServiceImplTest {
         cartItem2.setPrice(new BigDecimal(20000));
         cartItems.add(cartItem2);
 
+        userAddress = new UserAddress();
+        userAddress.setUserAddressId(1L);
+//        userAddress.setUserId(buyer.getUserId());
+
         seller = new User();
         seller.setUserId(1L);
         buyer = new User();
         buyer.setUserId(2L);
 
-        userAddress = new UserAddress();
-        userAddress.setUserAddressId(1L);
-        userAddress.setUserId(buyer.getUserId());
 
         sellerAddress = new UserAddress();
         sellerAddress.setUserAddressId(2L);
@@ -105,6 +101,7 @@ class OrderServiceImplTest {
 
     @Test
     void testCheckout_Successfull_Checkout() {
+        //arrange
         when(cartItemRepository.findAllById(anyList())).thenReturn(cartItems);
         when(userAddressRepository.findById(anyLong())).thenReturn(Optional.of(userAddress));
         when(inventoryService.checkAndLockInventory(anyMap())).thenReturn(true);
@@ -133,7 +130,15 @@ class OrderServiceImplTest {
         assertEquals("http://payment.url", result.getXenditPaymentUrl());
 
         verify(cartItemRepository).findAllById(checkoutRequest.getSelectedCartItemIds());
-
+        verify(userAddressRepository).findById(checkoutRequest.getUserAddressId());
+        verify(inventoryService).checkAndLockInventory(anyMap());
+        verify(orderRepository, times(3)).save(any(Order.class));
+        verify(orderItemRepository).saveAll(anyList());
+        verify(cartItemRepository).deleteAll(cartItems);
+        verify(shippingService, times(2)).calculateShippingRate(any());
+        verify(paymentService).create(any());
+        verify(inventoryService).decreaseQuantity(anyMap());
+        verify(userAddressRepository, times(2)).findByUserIdAndIsDefaultTrue(anyLong());
 
     }
 

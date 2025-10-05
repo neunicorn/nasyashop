@@ -31,12 +31,13 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me(){
+//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//        String name = auth.getName();
+//        UserInfo userInfo = (UserInfo) userDetailsService.loadUserByUsername(name);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String name = auth.getName();
+        UserInfo user = (UserInfo) auth.getPrincipal();
 
-        UserInfo userInfo = (UserInfo) userDetailsService.loadUserByUsername(name);
-
-        UserResponse res = UserResponse.fromUserAndRoles(userInfo.getUser(), userInfo.getRoles());
+        UserResponse res = UserResponse.fromUserAndRoles(user.getUser(), user.getRoles());
         return ResponseEntity.ok(res);
     }
 

@@ -18,7 +18,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query(value = """
     SELECT * FROM product
-    WHERE LOWER("name") like :name
+    WHERE LOWER(name)  like :name
     """, nativeQuery=true)
     Page<Product> findByNamePageable(String name, Pageable pageable);
 
