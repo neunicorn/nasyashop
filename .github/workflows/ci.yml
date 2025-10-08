@@ -40,7 +40,7 @@ jobs:
 
       # FIX 1 & 2: Changed 'run:' to 'uses:' to correctly invoke the GitHub Action
       - name: Upload Jacoco Coverage Report Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: target/site/jacoco/
