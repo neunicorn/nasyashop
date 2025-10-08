@@ -91,8 +91,8 @@ class UserControllerTest {
                 mockUserInfo.getAuthorities() // Assumes UserInfo provides Authorities
         );
     }
-
     @Test
+
     void test_GetUser_Should_Return_User() throws Exception {
         // arrange already do in the setup
 

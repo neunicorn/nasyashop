@@ -1,14 +1,23 @@
 package com.nasya.ecommerce.repository;
 
+import com.nasya.ecommerce.config.ApiSecurityConfiguration;
+import com.nasya.ecommerce.config.middleware.JwtAuthenticationFilter;
 import com.nasya.ecommerce.entity.Product;
+import com.nasya.ecommerce.service.CacheService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -17,12 +26,30 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@DataJpaTest(
+        excludeAutoConfiguration = {
+                RedisAutoConfiguration.class,
+                SecurityAutoConfiguration.class
+        },
+        excludeFilters = {
+                // Exclude the custom configuration classes that demand web beans (HandlerExceptionResolver)
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
+                        ApiSecurityConfiguration.class,
+                        JwtAuthenticationFilter.class
+                })}
+)
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 class ProductRepositoryTest {
 
     @Autowired
     private ProductRepository productRepository;
+
+    // Mocks are still necessary as a safety net
+    @MockBean
+    private CacheService cacheService;
+
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @BeforeEach
     void setUp(){
@@ -91,9 +118,9 @@ class ProductRepositoryTest {
         assertThat(products).size().isEqualTo(5);
     }
 
-    @Test
-    void findByCategory() {
-    }
+//    @Test
+//    void findByCategory() {
+//    }
 
     @Test
     void findByPageable() {
@@ -108,7 +135,7 @@ class ProductRepositoryTest {
         assertThat(products).size().isEqualTo(5);
     }
 
-    @Test
-    void findByIdWithPessimisticLock() {
-    }
+//    @Test
+//    void findByIdWithPessimisticLock() {
+//    }
 }

@@ -1,6 +1,5 @@
 package com.nasya.ecommerce.common;
 
-import com.nasya.ecommerce.entity.Order;
 import com.nasya.ecommerce.model.OrderStatus;
 
 import java.util.EnumMap;
