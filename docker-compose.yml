@@ -6,8 +6,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ecommerce
-      - SPRING_DATASOURCE_USERRNAME=ecommerce_user
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/nasyashop
+      - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=root
     depends_on:
       - db
@@ -32,12 +32,31 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=ecommerce
-      - POSTGRES_USER=ecommerce_user
+      - POSTGRES_DB=nasyashop
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=root
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-sonarqube-db.sh:/docker-entrypoint-initdb.d/init-sonarqube-db.sh
+
+  sonarqube:
+    image: sonarqube:community
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
   redis_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
