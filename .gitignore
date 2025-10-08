@@ -35,4 +35,5 @@ build/
 #properties or enivorment var
 *.properties
 application.properties
+src/main/resources/application.properties
 
