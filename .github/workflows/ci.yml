@@ -12,16 +12,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # BEST PRACTICE 1: Cache should be restored before the build step starts
-      - name: Cache Maven dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          # FIX 3: Corrected syntax for restore-keys from {{ }} to ${{ }}
-          restore-keys: ${{ runner.os }}-m2
-
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
@@ -29,20 +19,24 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # BEST PRACTICE 2: Build the project, skipping tests to make sure the compilation works first
-      - name: Build with Maven (Skip Tests)
-        run: mvn clean install -DskipTests
+      - name: Build with maven
+        run: mvn clean install
 
-      # Step to run only the tests now that the project is built
-      - name: Run unit tests and generate report
-        # We combine test and jacoco:report into one run for efficiency
-        run: mvn test jacoco:report
-        env:
-          MAVEN_OPTS: -Xms512m -Xmx2048m
+      - name: Run test
+        run: mvn test
 
-      # FIX 1 & 2: Changed 'run:' to 'uses:' to correctly invoke the GitHub Action
-      - name: Upload Jacoco Coverage Report Artifact
-        uses: actions/upload-artifact@v4
+      - name: Generate Jacoco Coverage Report
+        run: mvn jacoco:report
+
+      - name: Upload coverage report
+        run: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: target/site/jacoco/
+
+      - name: Cache maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: {{ runner.os }}-m2
