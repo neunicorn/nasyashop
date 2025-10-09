@@ -37,6 +37,8 @@ jobs:
       - name: Run unit tests and generate report
         # We combine test and jacoco:report into one run for efficiency
         run: mvn test jacoco:report
+        env:
+          MAVEN_OPTS: -Xms512m -Xmx2048m
 
       # FIX 1 & 2: Changed 'run:' to 'uses:' to correctly invoke the GitHub Action
       - name: Upload Jacoco Coverage Report Artifact
