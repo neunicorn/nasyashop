@@ -26,6 +26,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -36,6 +37,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 //@WebMvcTest(controllers = UserController.class)
+@TestPropertySource(properties = {
+        // The value must be long enough (e.g., 32+ characters) for the JWT Secret Key
+        "app.jwt.secret=ThisIsTheSecretKeyRequiredForTestingContextLoading"
+})
 @SpringBootTest
 @AutoConfigureMockMvc
 class UserControllerTest {
